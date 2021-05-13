@@ -1,4 +1,4 @@
-from typing import Optional, Callable
+from typing import Callable
 
 import httpx
 from asyncpg import Connection
@@ -47,18 +47,24 @@ async def verify_image_url(url: str) -> None:
             response = await client.get(url)
             response.raise_for_status()
         except Exception as e:
-            if isinstance(e, (httpx.InvalidURL, httpx.HTTPStatusError)):
+            if isinstance(e, (httpx.InvalidURL, httpx.HTTPStatusError, httpx.UnsupportedProtocol)):
                 raise HTTPException(status_code=400, detail="Invalid URL.")
             # Log error
             raise e
 
 
 @app.post("/minecraft_images")
-async def minecraft_images(request: Request, image: MinecraftImage) -> Response:
+async def minecraft_images(request: Request, image: MinecraftImage) -> dict:
+    """Add minecraft image to database."""
     await verify_image_url(image.url)
-    return {"message": "received."}
 
-    # connection: Connection = request.state.database_connection
-    # async with connection.transaction():
-    #     sql = "INSERT INTO minecraft_images VALUES ($1, $2);"
-    #     args = ()
+    # `Connection` type hint for code intellisense/auto complete.
+    connection: Connection = request.state.database_connection
+    async with connection.transaction():
+        await connection.execute(
+            "INSERT INTO minecraft_images VALUES ($1, $2);",
+            image.image_description,
+            image.url
+        )
+    
+    return image
