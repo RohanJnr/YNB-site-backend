@@ -17,12 +17,14 @@ app = FastAPI()
 async def startup_event() -> None:
     await constants.DB_POOL
 
+
 @app.middleware("http")
 async def attach_db_conn(request: Request, call_next: Callable) -> Response:
     async with constants.DB_POOL.acquire() as conn:
         request.state.database_connection = conn
         response = await call_next(request)
     return response
+
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
@@ -33,6 +35,7 @@ async def shutdown_event() -> None:
 @app.get("/")
 async def home(request: Request) -> dict:
     return {"message": "Home page"}
+
 
 async def verify_image_url(url: str) -> None:
     """Verify if url is True and is an image."""
@@ -48,7 +51,6 @@ async def verify_image_url(url: str) -> None:
                 raise HTTPException(status_code=400, detail="Invalid URL.")
             # Log error
             raise e
-
 
 
 @app.post("/minecraft_images")
