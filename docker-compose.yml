@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+    postgres:
+        image: postgres:12-alpine
+        ports:
+            - "127.0.0.1:5000:5432"
+        environment:
+            POSTGRES_USER: ynb-backend
+            POSTGRES_PASSWORD: ynb-backend
+            POSTGRES_DB: ynb
+
+        volumes:
+            - ./postgres/tables:/docker-entrypoint-initdb.d/
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - "127.0.0.1:8000:80"
+        volumes:
+            - .:/app
+        depends_on:
+            - postgres
+        env_file:
+            - ./.env
+        environment:
+            - DATABASE_URL=postgres://ynb-backend:ynb-backend@postgres:5432/ynb
+    
